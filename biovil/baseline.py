@@ -45,11 +45,38 @@ class CheXpertDataset(torch.utils.data.Dataset):
         
         return img, labels
 
-def load_biovilt_model(device='cuda'):
-    """Load BioViL-T model from HuggingFace"""
+def load_biovilt_model(device='cuda', model_path=None):
+    """
+    Load BioViL-T model from HuggingFace or local directory
+    
+    Args:
+        device: 'cuda' or 'cpu'
+        model_path: Path to local model directory. If None, downloads from HuggingFace
+    """
     print("Loading BioViL-T model...")
-    model = AutoModel.from_pretrained("microsoft/BiomedVLP-BioViL-T", trust_remote_code=True)
-    tokenizer = AutoTokenizer.from_pretrained("microsoft/BiomedVLP-BioViL-T")
+    
+    if model_path is not None:
+        # Load from local directory
+        print(f"Loading from local path: {model_path}")
+        model = AutoModel.from_pretrained(
+            model_path, 
+            trust_remote_code=True,
+            local_files_only=True
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path,
+            local_files_only=True
+        )
+    else:
+        # Download from HuggingFace
+        model = AutoModel.from_pretrained(
+            "microsoft/BiomedVLP-BioViL-T", 
+            trust_remote_code=True
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            "microsoft/BiomedVLP-BioViL-T"
+        )
+    
     model = model.to(device)
     model.eval()
     return model, tokenizer
@@ -163,10 +190,13 @@ def main():
     batch_size = 16
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
+    # Path to locally downloaded model
+    model_path = '/home/hice1/rma96/scratch/cs6220-project/biovil/biovil_model'
+    
     print(f"Using device: {device}")
     
     # Load model
-    model, tokenizer = load_biovilt_model(device)
+    model, tokenizer = load_biovilt_model(device, model_path=model_path)
     
     # Create dataset and dataloader
     transform = get_image_transform()
