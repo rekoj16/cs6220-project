@@ -1,5 +1,7 @@
 cs6220/
 CheXpert-v1.0-small/
+archive_nih/
+misc_results-NOSAVE/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
