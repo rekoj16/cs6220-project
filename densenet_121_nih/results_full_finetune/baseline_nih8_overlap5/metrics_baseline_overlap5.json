@@ -1,0 +1,57 @@
+{
+  "threshold": 0.6,
+  "macro_f1_overlap5": 0.0,
+  "macro_auc_overlap5": 0.46480293362984176,
+  "per_class_overlap5": {
+    "Atelectasis": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "auc": 0.4242694805194805,
+      "tp": 0,
+      "fp": 0,
+      "tn": 154,
+      "fn": 80
+    },
+    "Cardiomegaly": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "auc": 0.5055811481218994,
+      "tp": 0,
+      "fp": 0,
+      "tn": 166,
+      "fn": 68
+    },
+    "Pleural Effusion": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "auc": 0.4621950129591564,
+      "tp": 0,
+      "fp": 0,
+      "tn": 167,
+      "fn": 67
+    },
+    "Pneumonia": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "auc": 0.5525442477876106,
+      "tp": 0,
+      "fp": 0,
+      "tn": 226,
+      "fn": 8
+    },
+    "Pneumothorax": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "auc": 0.37942477876106195,
+      "tp": 0,
+      "fp": 0,
+      "tn": 226,
+      "fn": 8
+    }
+  }
+}
