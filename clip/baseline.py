@@ -8,9 +8,8 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_auc_score, roc_curve
 from transformers import CLIPProcessor, CLIPModel
 
-# ---------------- config ---------------- #
 CACHE_DIR = "/home/hice1/rma96/scratch/transformers_cache"
-MODEL_NAME = "openai/clip-vit-base-patch32"  # swap to a medical CLIP if preferred
+MODEL_NAME = "openai/clip-vit-base-patch32"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 16
 NUM_WORKERS = 1
@@ -28,32 +27,27 @@ TEMPLATES = [
     "This radiograph demonstrates {}.",
 ]
 
-# -------------- Dataset -------------- #
 class CheXpertDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path, img_root):
         self.df = pd.read_csv(csv_path)
         self.img_root = Path(img_root)
-        # map -1 -> 0, NaN -> 0
         self.labels = self.df[CHEXPERT_LABELS].fillna(0).replace(-1, 0).values.astype(np.float32)
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
-        # Path in CSV contains prefix; remove if present
         rel_path = self.df.iloc[idx]["Path"].replace("CheXpert-v1.0-small/", "")
         img_path = self.img_root / rel_path
 
-        # Return raw PIL image (processor handles transforms)
         image = Image.open(img_path).convert("RGB")
         labels = torch.tensor(self.labels[idx], dtype=torch.float32)
         return image, labels
 
-# -------------- Helpers -------------- #
 def collate_fn(batch):
-    images, labels = zip(*batch)          # images: tuple(PIL...), labels: tuple(tensor,...)
-    labels = torch.stack(labels, dim=0)   # (batch, num_labels)
-    return list(images), labels           # images as list of PIL images
+    images, labels = zip(*batch)
+    labels = torch.stack(labels, dim=0)
+    return list(images), labels
 
 def prepare_text_embeddings(model, processor, device):
     """Create text prompts (templates) and compute text embeddings once."""
@@ -66,20 +60,19 @@ def prepare_text_embeddings(model, processor, device):
         tokenized = processor(text=text_prompts, padding=True, return_tensors="pt")
         tokenized = {k: v.to(device) for k, v in tokenized.items()}
         if hasattr(model, "get_text_features"):
-            text_emb = model.get_text_features(**tokenized)  # (num_texts, dim)
+            text_emb = model.get_text_features(**tokenized)
         else:
-            # fallback: forward and extract text_embeds if available
-            out = model.get_text_features(**tokenized)  # most CLIPModel versions have this
+            out = model.get_text_features(**tokenized)
             text_emb = out
 
         text_emb = text_emb / text_emb.norm(dim=-1, keepdim=True)
-    return text_emb  # normalized
+    return text_emb
 
 def compute_zero_shot_predictions(model, processor, dataloader, device):
     """Compute zero-shot predictions across the dataloader.
        Returns (predictions, labels) where predictions shape=(N, num_labels)."""
     model.eval()
-    text_emb = prepare_text_embeddings(model, processor, device)  # (num_texts, dim)
+    text_emb = prepare_text_embeddings(model, processor, device)
     num_templates = len(TEMPLATES)
     num_texts = text_emb.shape[0]
     assert num_texts == len(CHEXPERT_LABELS) * num_templates
@@ -89,33 +82,27 @@ def compute_zero_shot_predictions(model, processor, dataloader, device):
 
     with torch.no_grad():
         for images, labels in tqdm(dataloader):
-            # images: list(PIL...), labels: tensor
             image_inputs = processor(images=images, return_tensors="pt").to(device)
-            # Use CLIP API to get image features
             if hasattr(model, "get_image_features"):
                 image_emb = model.get_image_features(**{"pixel_values": image_inputs["pixel_values"]})
             else:
-                # fallback: model forward can be used, but CLIPModel provides get_image_features
                 out = model.get_image_features(**{"pixel_values": image_inputs["pixel_values"]})
                 image_emb = out
 
             image_emb = image_emb / image_emb.norm(dim=-1, keepdim=True)  # (batch, dim)
 
-            # similarity: batch x num_texts
             similarity = image_emb @ text_emb.T
 
-            # aggregate templates -> per-label scores (batch, num_labels)
             logits_per_label = []
             for i in range(len(CHEXPERT_LABELS)):
                 start = i * num_templates
                 end = (i + 1) * num_templates
-                # take mean similarity across templates
-                group = similarity[:, start:end]            # (batch, num_templates)
-                score = group.mean(dim=1)                   # (batch,)
-                logits_per_label.append(score)
-            logits_per_label = torch.stack(logits_per_label, dim=1)  # (batch, num_labels)
 
-            # normalize per-image to [0,1] (min-max) to produce multi-label probabilities
+                group = similarity[:, start:end]
+                score = group.mean(dim=1)
+                logits_per_label.append(score)
+            logits_per_label = torch.stack(logits_per_label, dim=1)
+
             mins = logits_per_label.min(dim=1, keepdim=True).values
             maxs = logits_per_label.max(dim=1, keepdim=True).values
             probs = (logits_per_label - mins) / (maxs - mins + 1e-8)
@@ -127,7 +114,7 @@ def compute_zero_shot_predictions(model, processor, dataloader, device):
     labels = np.vstack(all_labels)
     return predictions, labels
 
-# -------------- Metrics / plotting -------------- #
+
 def calculate_auroc(predictions, labels):
     aurocs = {}
     for i, name in enumerate(CHEXPERT_LABELS):
@@ -143,13 +130,11 @@ def calculate_auroc(predictions, labels):
     return aurocs, mean_auroc
 
 def plot_auroc_bargraph(aurocs, save_path="auroc_barplot.png"):
-    # Convert dictionary to sorted lists
     labels = list(aurocs.keys())
     values = [aurocs[k] for k in labels]
 
-    # Remove N/A values
     clean = [(l, v) for l, v in zip(labels, values) if not np.isnan(v)]
-    clean.sort(key=lambda x: x[1])  # sort by AUROC ascending
+    clean.sort(key=lambda x: x[1])
 
     sorted_labels = [x[0] for x in clean]
     sorted_values = [x[1] for x in clean]
@@ -166,8 +151,6 @@ def plot_auroc_bargraph(aurocs, save_path="auroc_barplot.png"):
     print(f"Saved AUROC bar plot → {save_path}")
 
 
-
-# -------------- main -------------- #
 def main():
     print(f"Using device: {DEVICE}")
     csv_path = "./CheXpert-v1.0-small/valid.csv"
@@ -184,14 +167,11 @@ def main():
 
     print(f"Dataset size: {len(dataset)}")
 
-    # load model + processor (cache to scratch)
     model = CLIPModel.from_pretrained(MODEL_NAME, cache_dir=CACHE_DIR).to(DEVICE)
     processor = CLIPProcessor.from_pretrained(MODEL_NAME, cache_dir=CACHE_DIR)
 
-    # compute predictions
     predictions, labels = compute_zero_shot_predictions(model, processor, dataloader, DEVICE)
 
-    # metrics
     aurocs, mean_auroc = calculate_auroc(predictions, labels)
     print("=" * 50)
     print("AUROC Results:")
@@ -202,7 +182,6 @@ def main():
     print(f"{'Mean AUROC':30s}: {mean_auroc:.4f}")
     print("=" * 50)
 
-    # plots & save
     plot_auroc_bargraph(aurocs)
     pd.DataFrame({"Pathology": list(aurocs.keys()), "AUROC": list(aurocs.values())}).to_csv(
         "clip_chexpert_zero_shot_results.csv", index=False

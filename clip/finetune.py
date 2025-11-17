@@ -13,12 +13,11 @@ from transformers import CLIPModel, CLIPProcessor
 from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 
-# ---------------- config ---------------- #
 CACHE_DIR = "/home/hice1/rma96/scratch/transformers_cache"
 MODEL_NAME = "openai/clip-vit-base-patch32"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 BATCH_SIZE = 32
-LR = 1e-4
+LR = 1e-6
 EPOCHS = 5
 
 CHEXPERT_LABELS = [
@@ -34,7 +33,6 @@ TEMPLATES = [
     "This radiograph demonstrates {}.",
 ]
 
-# -------------- Dataset -------------- #
 class CheXpertDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path, img_root):
         self.df = pd.read_csv(csv_path)
@@ -56,7 +54,6 @@ def collate_fn(batch):
     labels = torch.stack(labels)
     return list(images), labels
 
-# -------------- Helpers -------------- #
 def calculate_auroc(predictions, labels):
     aurocs = {}
     for i, name in enumerate(CHEXPERT_LABELS):
@@ -84,18 +81,13 @@ def prepare_text_embeddings(model, processor, device):
     return text_emb
 
 
-# ============================================================
-#                     TRAINING LOOP
-# ============================================================
 def train_lora():
     print("Loading model...")
     model = CLIPModel.from_pretrained(MODEL_NAME, cache_dir=CACHE_DIR)
 
-    # Freeze base
     for p in model.parameters():
         p.requires_grad = False
 
-    # LoRA config
     lora_config = LoraConfig(
         r=16,
         lora_alpha=32,
@@ -107,11 +99,9 @@ def train_lora():
     model = get_peft_model(model, lora_config).to(DEVICE)
     processor = CLIPProcessor.from_pretrained(MODEL_NAME, cache_dir=CACHE_DIR)
 
-    # Precompute text embeddings
     text_emb = prepare_text_embeddings(model, processor, DEVICE)
     num_templates = len(TEMPLATES)
 
-    # Datasets
     train_ds = CheXpertDataset("./CheXpert-v1.0-small/train.csv",
                                "./CheXpert-v1.0-small/")
     val_ds = CheXpertDataset("./CheXpert-v1.0-small/valid.csv",
@@ -136,9 +126,6 @@ def train_lora():
 
     print("Starting training...")
     for epoch in range(EPOCHS):
-        # -----------------------------
-        # Training phase
-        # -----------------------------
         model.train()
         total_loss = 0
         all_preds = []
@@ -170,9 +157,6 @@ def train_lora():
         avg_train_loss = total_loss / len(train_dl)
         train_loss_history.append(avg_train_loss)
 
-        # -----------------------------
-        # Validation phase (loss only)
-        # -----------------------------
         model.eval()
         val_loss = 0
         val_preds = []
@@ -202,7 +186,6 @@ def train_lora():
         avg_val_loss = val_loss / len(val_dl)
         val_loss_history.append(avg_val_loss)
 
-        # Compute AUROC on validation set
         preds = np.vstack(val_preds)
         lbls = np.vstack(val_labels)
         aurocs, mean_auroc = calculate_auroc(preds, lbls)
@@ -211,13 +194,9 @@ def train_lora():
         print(f"Epoch {epoch+1}/{EPOCHS} - Train Loss: {avg_train_loss:.4f}  "
               f"Val Loss: {avg_val_loss:.4f}  Mean AUROC: {mean_auroc:.4f}")
 
-    # Save LoRA adapter
     model.save_pretrained("clip_lora_chexpert")
     print("Saved LoRA fine-tuned model → clip_lora_chexpert/")
 
-    # =========================================================
-    # LOSS CURVE (train + validation)
-    # =========================================================
     plt.figure(figsize=(8,5))
     plt.plot(range(1, EPOCHS+1), train_loss_history, marker='o', label="Training Loss")
     plt.plot(range(1, EPOCHS+1), val_loss_history, marker='o', label="Validation Loss")
@@ -232,9 +211,7 @@ def train_lora():
 
     print("Saved loss curve → lora_loss_curve.png")
 
-    # =========================================================
-    # AUROC PLOTS — 3 separate graphs (epochs 1, 3, 5)
-    # =========================================================
+    # single bar graphs
     for e in [1, 3, 5]:
         if e not in epoch_aurocs:
             continue
@@ -257,6 +234,7 @@ def train_lora():
         plt.savefig(f"lora_auroc_epoch_{e}.png", dpi=300)
         plt.close()
 
+    # combined bar graphs
     for e in [1, 3, 5]:
         if e not in epoch_aurocs:
             print(f"Skipping AUROC grouped graph — epoch {e} missing")
