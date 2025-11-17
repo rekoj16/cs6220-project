@@ -7,7 +7,7 @@ import json
 # ============================================================
 # CONFIG
 # ============================================================
-FINETUNED_MODEL_PATH = "results_full_finetune1/models/densenet121nih_chexpert14_finetuned.pt"
+FINETUNED_MODEL_PATH = "results_full_finetune_8e/models/densenet121nih_chexpert14_finetuned.pt"
 
 CHEXPERT_CLASSES = [
     "No Finding",

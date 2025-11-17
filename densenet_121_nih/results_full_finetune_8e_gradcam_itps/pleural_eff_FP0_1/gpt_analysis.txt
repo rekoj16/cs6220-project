@@ -1,0 +1,22 @@
+### Interpretation of Heatmaps
+
+1. **Visual Interpretation in Medical Terms:**
+   - **Baseline Model:** The heatmap shows no clearly localized regions of activation, indicating that the model did not focus on any specific area of the chest X-ray.
+   - **Finetuned Model:** The heatmap shows a high-activation region in the lower central part of the lungs, which could correspond to the area where pleural effusion might be present, such as the costophrenic angle or the lower lung fields.
+
+2. **Model Focus Explanation:**
+   - **Baseline Model:** The lack of focused activation suggests the model did not identify any specific regions as relevant for pleural effusion.
+   - **Finetuned Model:** The model focuses on the lower central lung area, likely because pleural effusion often accumulates in these regions due to gravity, especially in an upright X-ray.
+
+3. **Relevance to Pathology:**
+   - The finetuned model's focus on the lower lung fields is relevant to pleural effusion, as fluid accumulation is typically seen in these areas. However, the prediction is a false positive (FP), indicating a misclassification despite correct localization.
+
+4. **Comparison of Baseline vs. Finetuned Attention:**
+   - **Baseline Model:** Shows no specific attention, indicating poor localization and understanding of pleural effusion.
+   - **Finetuned Model:** Demonstrates improved localization by focusing on the lower lung fields, suggesting better feature learning related to pleural effusion.
+
+5. **Bounding Boxes and Model Reasoning:**
+   - **Correct Reasoning:** The finetuned model's bounding box around the lower central lung region reflects an understanding of where pleural effusion typically appears.
+   - **Incorrect Outcome:** Despite correct localization, the model incorrectly predicted the presence of pleural effusion, indicating a need for further refinement to reduce false positives.
+
+Overall, the finetuned model shows improved localization but still requires adjustments to improve specificity and reduce false positive rates.

@@ -1,0 +1,19 @@
+1. **Relevance of Boxed Regions to Atelectasis:**
+
+   - **Baseline Model (Top-left):** The boxed region covers a large area, including the upper chest and shoulders. This area is not typically where atelectasis signs are most evident. Atelectasis is usually identified by volume loss, displacement of structures, or increased opacity in the lung fields, which are not clearly highlighted here.
+   
+   - **Finetuned Model (Bottom-left):** The boxed region is focused on the upper right corner, near the shoulder. This is not relevant to atelectasis, which is typically assessed within the lung fields rather than peripheral areas.
+
+2. **Judgment on Bounding Boxes:**
+
+   - **Baseline Model:** The bounding box does not reflect correct reasoning. The highlighted areas do not correspond to typical atelectasis indicators such as lung collapse or increased opacity in the lung fields.
+   
+   - **Finetuned Model:** The bounding box reflects incorrect reasoning. The activation is outside the lung fields, which is not relevant for diagnosing atelectasis.
+
+3. **Explanation:**
+
+   - **Baseline Model:** The incorrect activation might be due to the model focusing on non-specific features or noise, such as the edges of the image or unrelated anatomical structures like the shoulders.
+   
+   - **Finetuned Model:** The model's focus on the upper right corner could be due to overfitting or misinterpretation of irrelevant features, such as image artifacts or labels, rather than actual signs of atelectasis.
+
+In both cases, the models failed to correctly identify regions within the lung fields that would indicate atelectasis, such as areas of increased density, volume loss, or mediastinal shift. Proper identification would involve highlighting areas within the lungs where these features are present.

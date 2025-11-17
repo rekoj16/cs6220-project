@@ -1,0 +1,10 @@
+1. **Focus on Boxed Regions:**
+   - The finetuned model's heatmap shows high activation in the lower central region of the chest X-ray. This area corresponds to the lower lung zones and possibly the costophrenic angles.
+   - In cases of pleural effusion, fluid typically accumulates in the lower parts of the thoracic cavity, often visible in the costophrenic angles and lower lung zones.
+
+2. **Relevance to Pleural Effusion:**
+   - The regions focused on by the finetuned model are indeed relevant to pleural effusion. The costophrenic angles and lower lung zones are key areas where fluid accumulation is observed on chest X-rays.
+
+3. **Judgment on Bounding Boxes:**
+   - The bounding box in the finetuned model reflects correct reasoning for identifying pleural effusion, as it highlights the lower lung regions where fluid is likely to accumulate.
+   - The baseline model, however, shows no significant activation, which aligns with its classification as a true negative (TN). The finetuned model's false positive (FP) suggests it may be overfitting or misinterpreting normal variations as pathology. However, the focus on relevant areas suggests that the model's reasoning, while incorrect in this instance, is based on appropriate features for pleural effusion detection.

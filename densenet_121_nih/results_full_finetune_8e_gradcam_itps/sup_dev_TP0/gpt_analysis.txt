@@ -1,0 +1,17 @@
+1. **Relevance of Boxed Regions:**
+
+   - **Baseline Model (Top-Left):** The boxed region is not relevant to the pathology of "Support Devices." The activation is spread across a large area, including regions that are unlikely to contain support devices, such as the upper chest and shoulders.
+
+   - **Finetuned Model (Bottom-Left):** The boxed region is relevant. The activation is focused on the central thoracic area, where support devices such as central lines or endotracheal tubes are typically located.
+
+2. **Judgment on Bounding Boxes:**
+
+   - **Baseline Model:** The bounding box reflects incorrect reasoning. The model's prediction seems to be influenced by irrelevant areas, possibly due to noise or artifacts in the image.
+
+   - **Finetuned Model:** The bounding box reflects correct reasoning. The model is focusing on the appropriate region where support devices are commonly found.
+
+3. **Details in Boxed Regions:**
+
+   - **Baseline Model (Incorrect):** The model might have been misled by the overall brightness or contrast in the image rather than specific features indicative of support devices.
+
+   - **Finetuned Model (Correct):** In the finetuned model, the activation is centered on the mediastinal area, which is where you would expect to see support devices like a central venous catheter or an endotracheal tube. The model likely identified linear structures or radiopaque lines that are characteristic of these devices, leading to a correct prediction.
