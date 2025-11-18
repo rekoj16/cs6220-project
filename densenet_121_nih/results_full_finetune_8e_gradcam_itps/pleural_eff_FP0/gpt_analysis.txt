@@ -1,0 +1,18 @@
+1. **Relevance of Boxed Regions to Pleural Effusion:**
+
+   The boxed regions in the finetuned model heatmap (bottom-left) are focused on the lower thoracic area, which is relevant for detecting pleural effusion. Pleural effusion typically presents as fluid accumulation in the pleural space, often seen at the lung bases on an upright chest X-ray.
+
+2. **Judgment on Bounding Boxes:**
+
+   The bounding boxes in the finetuned model reflect correct reasoning in terms of location, as they cover the lower lung fields where pleural effusions are usually detected. However, the prediction was a false positive, indicating that despite the correct location, the model misinterpreted the visual cues.
+
+3. **Explanation of Details:**
+
+   - **Correct Location but Incorrect Prediction:**
+     - The model correctly focused on the lower lung fields, where pleural effusions are typically visible.
+     - In a true positive case, you would expect to see blunting of the costophrenic angle or a meniscus sign, indicating fluid accumulation.
+     - However, in this specific case, the absence of these signs suggests that the model may have been misled by other features, such as normal anatomical variations or artifacts, leading to a false positive.
+
+   - **Potential Reasons for Irrelevance:**
+     - The model might have been influenced by overlapping structures, such as the heart or diaphragm, or by variations in exposure or positioning.
+     -

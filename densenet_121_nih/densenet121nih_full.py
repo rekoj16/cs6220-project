@@ -19,7 +19,7 @@ DATA_DIR = "CheXpert-v1.0-small"
 TRAIN_CSV = os.path.join(DATA_DIR, "train.csv")
 VAL_CSV = os.path.join(DATA_DIR, "valid.csv")
 
-RESULTS_DIR = "results_full_finetune1"
+RESULTS_DIR = "results_full_finetune_8e"
 MODEL_DIR = os.path.join(RESULTS_DIR, "models")
 BASELINE_DIR = os.path.join(RESULTS_DIR, "baseline_nih8_overlap5")
 FINETUNED_DIR = os.path.join(RESULTS_DIR, "finetuned_14")
@@ -66,9 +66,9 @@ OVERLAP_PAIRS = [
 OVERLAP_CHEX_LABELS = [dst for _, dst in OVERLAP_PAIRS]
 
 IMG_SIZE = 224
-BATCH_SIZE = 64
-EPOCHS = 3
-LR = 1e-4
+BATCH_SIZE = 32
+EPOCHS = 8
+LR = 1e-6
 THRESHOLD = 0.6
 
 

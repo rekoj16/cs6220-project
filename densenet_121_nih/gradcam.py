@@ -16,9 +16,9 @@ import torchvision.transforms as T
 CHEXPERT_ROOT = "CheXpert-v1.0-small"
 VAL_CSV = os.path.join(CHEXPERT_ROOT, "valid.csv")
 
-FINETUNED_MODEL_PATH = "results_full_finetune1/models/densenet121nih_chexpert14_finetuned.pt"
+FINETUNED_MODEL_PATH = "results_full_finetune/models/densenet121nih_chexpert14_finetuned.pt"
 
-SAVE_DIR = "results_full_finetune_gradcam1"
+SAVE_DIR = "results_full_finetune_gradcam"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 IMG_SIZE = 224
@@ -275,6 +275,61 @@ def plot_panel(
 
 
 # ============================================================
+# PANEL GENERATION HELPER
+# ============================================================
+def generate_and_save_panel(
+    idx,
+    dataset,
+    chex_idx,
+    nih_idx,
+    y_prob_b,
+    y_prob_f,
+    conv_b,
+    conv_f,
+    out_dir,
+    chex_label,
+    save_name,
+):
+    img_t, labels, img_path = dataset[idx]
+    orig = Image.open(img_path).convert("L")
+    orig = orig.resize((IMG_SIZE, IMG_SIZE), Image.BILINEAR)
+    orig_np = np.array(orig)
+
+    t = int(labels[chex_idx])
+
+    p_b = torch.sigmoid(torch.tensor(y_prob_b[idx, nih_idx])).item()
+    pred_b = p_b >= THRESHOLD
+    outcome_b = (
+        "TP" if pred_b and t == 1 else
+        "FP" if pred_b and t == 0 else
+        "TN" if not pred_b and t == 0 else
+        "FN"
+    )
+
+    p_f = float(y_prob_f[idx, chex_idx])
+    pred_f = p_f >= THRESHOLD
+    outcome_f = (
+        "TP" if pred_f and t == 1 else
+        "FP" if pred_f and t == 0 else
+        "TN" if not pred_f and t == 0 else
+        "FN"
+    )
+
+    cam_up_b, cam_raw_b, _ = compute_gradcam(baseline, img_t, nih_idx, conv_b, device)
+    cam_up_f, cam_raw_f, _ = compute_gradcam(finetuned, img_t, chex_idx, conv_f, device)
+
+    save_path = os.path.join(out_dir, save_name)
+
+    plot_panel(
+        orig_np,
+        cam_up_b, cam_raw_b, p_b, outcome_b,
+        cam_up_f, cam_raw_f, p_f, outcome_f,
+        chex_label,
+        save_path,
+    )
+
+
+# ============================================================
 # MAIN
 # ============================================================
 def main():
@@ -284,6 +339,7 @@ def main():
     dataset = CheXpertDataset(df, CHEXPERT_ROOT)
     loader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=False)
 
+    global baseline, finetuned
     baseline = load_baseline(device)
     finetuned, fin_classes = load_finetuned(FINETUNED_MODEL_PATH, device)
 
@@ -293,6 +349,8 @@ def main():
     conv_f = get_last_conv(finetuned)
 
     y_true, y_prob_b, y_prob_f, paths = evaluate_models(baseline, finetuned, loader, device)
+
+    overlap_chex_labels = [chex_label for (_, chex_label) in OVERLAP_PAIRS]
 
     for nih_label, chex_label in OVERLAP_PAIRS:
         nih_idx = NIH_CLASSES.index(nih_label)
@@ -304,43 +362,247 @@ def main():
         idxs = pick_balanced_indices(y_true, y_prob_f, chex_idx, n=NUM_IMAGES_PER_CLASS)
 
         for k, idx in enumerate(idxs):
-            img_t, labels, img_path = dataset[idx]
-            orig = Image.open(img_path).convert("L")
-            orig = orig.resize((IMG_SIZE, IMG_SIZE), Image.BILINEAR)
-            orig_np = np.array(orig)
-
-            t = int(labels[chex_idx])
-
-            p_b = torch.sigmoid(torch.tensor(y_prob_b[idx, nih_idx])).item()
-            pred_b = p_b >= THRESHOLD
-            outcome_b = (
-                "TP" if pred_b and t == 1 else
-                "FP" if pred_b and t == 0 else
-                "TN" if not pred_b and t == 0 else
-                "FN"
+            save_name = f"{chex_label.replace(' ', '_')}_{k}.png"
+            generate_and_save_panel(
+                idx=idx,
+                dataset=dataset,
+                chex_idx=chex_idx,
+                nih_idx=nih_idx,
+                y_prob_b=y_prob_b,
+                y_prob_f=y_prob_f,
+                conv_b=conv_b,
+                conv_f=conv_f,
+                out_dir=out_dir,
+                chex_label=chex_label,
+                save_name=save_name,
             )
 
-            p_f = float(y_prob_f[idx, chex_idx])
-            pred_f = p_f >= THRESHOLD
-            outcome_f = (
-                "TP" if pred_f and t == 1 else
-                "FP" if pred_f and t == 0 else
-                "TN" if not pred_f and t == 0 else
-                "FN"
+        t_all = y_true[:, chex_idx].astype(int)
+        p_all = y_prob_f[:, chex_idx]
+        pred_all = (p_all >= THRESHOLD).astype(int)
+
+        TN_all = np.where((t_all == 0) & (pred_all == 0))[0]
+        TP_all = np.where((t_all == 1) & (pred_all == 1))[0]
+        FP_all = np.where((t_all == 0) & (pred_all == 1))[0]
+        FN_all = np.where((t_all == 1) & (pred_all == 0))[0]
+
+        idx_max = int(np.argmax(p_all))
+        idx_min = int(np.argmin(p_all))
+
+        diff = np.abs(p_all - THRESHOLD)
+        order = np.argsort(diff)
+        near_thresh_idxs = []
+        for i in order:
+            if i == idx_max or i == idx_min:
+                continue
+            near_thresh_idxs.append(int(i))
+            if len(near_thresh_idxs) >= 3:
+                break
+        if len(near_thresh_idxs) == 0:
+            near_thresh_idxs.append(int(order[0]))
+
+        def take_up_to_three(arr):
+            arr = np.asarray(arr, dtype=int)
+            if arr.size == 0:
+                return []
+            if arr.size <= 3:
+                return arr.tolist()
+            return arr[:3].tolist()
+
+        extra_sets = {
+            "TN": take_up_to_three(TN_all),
+            "FN": take_up_to_three(FN_all),
+            "TP": take_up_to_three(TP_all),
+            "FP": take_up_to_three(FP_all),
+        }
+
+        base_name = chex_label.replace(" ", "_")
+
+        generate_and_save_panel(
+            idx=idx_max,
+            dataset=dataset,
+            chex_idx=chex_idx,
+            nih_idx=nih_idx,
+            y_prob_b=y_prob_b,
+            y_prob_f=y_prob_f,
+            conv_b=conv_b,
+            conv_f=conv_f,
+            out_dir=out_dir,
+            chex_label=chex_label,
+            save_name=f"{base_name}_extra_maxprob_0.png",
+        )
+
+        generate_and_save_panel(
+            idx=idx_min,
+            dataset=dataset,
+            chex_idx=chex_idx,
+            nih_idx=nih_idx,
+            y_prob_b=y_prob_b,
+            y_prob_f=y_prob_f,
+            conv_b=conv_b,
+            conv_f=conv_f,
+            out_dir=out_dir,
+            chex_label=chex_label,
+            save_name=f"{base_name}_extra_minprob_0.png",
+        )
+
+        for j, idx_thr in enumerate(near_thresh_idxs):
+            generate_and_save_panel(
+                idx=idx_thr,
+                dataset=dataset,
+                chex_idx=chex_idx,
+                nih_idx=nih_idx,
+                y_prob_b=y_prob_b,
+                y_prob_f=y_prob_f,
+                conv_b=conv_b,
+                conv_f=conv_f,
+                out_dir=out_dir,
+                chex_label=chex_label,
+                save_name=f"{base_name}_extra_thresh_{j}.png",
             )
 
-            cam_up_b, cam_raw_b, _ = compute_gradcam(baseline, img_t, nih_idx, conv_b, device)
-            cam_up_f, cam_raw_f, _ = compute_gradcam(finetuned, img_t, chex_idx, conv_f, device)
+        for tag, idx_list in extra_sets.items():
+            for j, idx_cf in enumerate(idx_list):
+                generate_and_save_panel(
+                    idx=idx_cf,
+                    dataset=dataset,
+                    chex_idx=chex_idx,
+                    nih_idx=nih_idx,
+                    y_prob_b=y_prob_b,
+                    y_prob_f=y_prob_f,
+                    conv_b=conv_b,
+                    conv_f=conv_f,
+                    out_dir=out_dir,
+                    chex_label=chex_label,
+                    save_name=f"{base_name}_extra_{tag}_{j}.png",
+                )
 
-            save_path = os.path.join(out_dir, f"{chex_label.replace(' ', '_')}_{k}.png")
+    for chex_idx, chex_label in enumerate(CHEXPERT_CLASSES):
+        if chex_label in overlap_chex_labels:
+            continue
 
-            plot_panel(
-                orig_np,
-                cam_up_b, cam_raw_b, p_b, outcome_b,
-                cam_up_f, cam_raw_f, p_f, outcome_f,
-                chex_label,
-                save_path,
+        out_dir = os.path.join(SAVE_DIR, chex_label.replace(" ", "_"))
+        os.makedirs(out_dir, exist_ok=True)
+
+        nih_idx_fallback = 0
+
+        idxs = pick_balanced_indices(y_true, y_prob_f, chex_idx, n=NUM_IMAGES_PER_CLASS)
+
+        for k, idx in enumerate(idxs):
+            save_name = f"{chex_label.replace(' ', '_')}_{k}.png"
+            generate_and_save_panel(
+                idx=idx,
+                dataset=dataset,
+                chex_idx=chex_idx,
+                nih_idx=nih_idx_fallback,
+                y_prob_b=y_prob_b,
+                y_prob_f=y_prob_f,
+                conv_b=conv_b,
+                conv_f=conv_f,
+                out_dir=out_dir,
+                chex_label=chex_label,
+                save_name=save_name,
             )
+
+        t_all = y_true[:, chex_idx].astype(int)
+        p_all = y_prob_f[:, chex_idx]
+        pred_all = (p_all >= THRESHOLD).astype(int)
+
+        TN_all = np.where((t_all == 0) & (pred_all == 0))[0]
+        TP_all = np.where((t_all == 1) & (pred_all == 1))[0]
+        FP_all = np.where((t_all == 0) & (pred_all == 1))[0]
+        FN_all = np.where((t_all == 1) & (pred_all == 0))[0]
+
+        idx_max = int(np.argmax(p_all))
+        idx_min = int(np.argmin(p_all))
+
+        diff = np.abs(p_all - THRESHOLD)
+        order = np.argsort(diff)
+        near_thresh_idxs = []
+        for i in order:
+            if i == idx_max or i == idx_min:
+                continue
+            near_thresh_idxs.append(int(i))
+            if len(near_thresh_idxs) >= 3:
+                break
+        if len(near_thresh_idxs) == 0 and len(order) > 0:
+            near_thresh_idxs.append(int(order[0]))
+
+        def take_up_to_three(arr):
+            arr = np.asarray(arr, dtype=int)
+            if arr.size == 0:
+                return []
+            if arr.size <= 3:
+                return arr.tolist()
+            return arr[:3].tolist()
+
+        extra_sets = {
+            "TN": take_up_to_three(TN_all),
+            "FN": take_up_to_three(FN_all),
+            "TP": take_up_to_three(TP_all),
+            "FP": take_up_to_three(FP_all),
+        }
+
+        base_name = chex_label.replace(" ", "_")
+
+        generate_and_save_panel(
+            idx=idx_max,
+            dataset=dataset,
+            chex_idx=chex_idx,
+            nih_idx=nih_idx_fallback,
+            y_prob_b=y_prob_b,
+            y_prob_f=y_prob_f,
+            conv_b=conv_b,
+            conv_f=conv_f,
+            out_dir=out_dir,
+            chex_label=chex_label,
+            save_name=f"{base_name}_extra_maxprob_0.png",
+        )
+
+        generate_and_save_panel(
+            idx=idx_min,
+            dataset=dataset,
+            chex_idx=chex_idx,
+            nih_idx=nih_idx_fallback,
+            y_prob_b=y_prob_b,
+            y_prob_f=y_prob_f,
+            conv_b=conv_b,
+            conv_f=conv_f,
+            out_dir=out_dir,
+            chex_label=chex_label,
+            save_name=f"{base_name}_extra_minprob_0.png",
+        )
+
+        for j, idx_thr in enumerate(near_thresh_idxs):
+            generate_and_save_panel(
+                idx=idx_thr,
+                dataset=dataset,
+                chex_idx=chex_idx,
+                nih_idx=nih_idx_fallback,
+                y_prob_b=y_prob_b,
+                y_prob_f=y_prob_f,
+                conv_b=conv_b,
+                conv_f=conv_f,
+                out_dir=out_dir,
+                chex_label=chex_label,
+                save_name=f"{base_name}_extra_thresh_{j}.png",
+            )
+
+        for tag, idx_list in extra_sets.items():
+            for j, idx_cf in enumerate(idx_list):
+                generate_and_save_panel(
+                    idx=idx_cf,
+                    dataset=dataset,
+                    chex_idx=chex_idx,
+                    nih_idx=nih_idx_fallback,
+                    y_prob_b=y_prob_b,
+                    y_prob_f=y_prob_f,
+                    conv_b=conv_b,
+                    conv_f=conv_f,
+                    out_dir=out_dir,
+                    chex_label=chex_label,
+                    save_name=f"{base_name}_extra_{tag}_{j}.png",
+                )
 
     print(f"Saved Grad-CAM panels to: {SAVE_DIR}")
 
