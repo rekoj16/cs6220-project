@@ -1,0 +1,15 @@
+**1. Image Quality & Ground Truth:**
+- The X-ray image appears to be clear enough for diagnosis, with visible anatomical structures and no major obstructions or artifacts interfering with the evaluation.
+- The Ground Truth label confirms the presence of **Enlarged Cardiomediastinum**, providing a definitive reference for analyzing the model's performance.
+
+**2. Baseline Model Analysis:**
+- **Heatmap Focus:** The Baseline Model's heatmap shows a focus primarily on the top portion of the chest and some areas of the lungs, but does not prominently highlight the heart or mediastinal region, which is crucial for identifying **Enlarged Cardiomediastinum**. Instead, it appears to detect background artifacts and has an unclear focus.
+- **Prediction:** **Enlarged Cardiomediastinum** does not appear in the Top 3 predictions, with focus instead on **Edema**, **Pleural Effusion**, and **Consolidation**, which are not directly related to the target pathology.
+
+**3. Finetuned Model Analysis:**
+- **Heatmap Focus:** The Finetuned Model demonstrates a shift in focus compared to the Baseline Model. The heatmap now draws attention to the central mediastinal area, indicating a better understanding of relevant anatomy associated with **Enlarged Cardiomediastinum**.
+- **Prediction:** **Enlarged Cardiomediastinum** is not in the Top 3 predictions, with the top predictions being **Lung Opacity**, **Pleural Effusion**, and **Atelectasis**. The confidence scores are lower compared to the Baseline Model, suggesting that while the focus is better, the final predictions remain inaccurate and less confident.
+
+**4. Final Assessment:**
+- **Verdict:** **NO CHANGE**
+- **Summary:** The Finetuned Model has improved its anatomical focus significantly, targeting areas relevant to **Enlarged Cardiomediastinum** compared to the Baseline Model. However, it still fails to predict the pathology accurately and confidently. This suggests that while the model has learned to target better features, it may still struggle with the distinction between various pathologies, indicating that further adjustments in training data or model architecture may be necessary to enhance diagnostic accuracy.

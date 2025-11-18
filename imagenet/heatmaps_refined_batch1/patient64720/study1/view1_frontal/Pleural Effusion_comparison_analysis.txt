@@ -1,0 +1,15 @@
+### 1. Image Quality & Ground Truth:
+- **X-ray Image Clarity:** The original X-ray image is sufficiently clear for diagnostic purposes, allowing for visual assessment of anatomical structures and potential pathologies.
+- **Ground Truth Confirmation:** The Ground Truth label confirms the presence of **Pleural Effusion**.
+
+### 2. Baseline Model Analysis:
+- **Heatmap Focus:** The heatmap from the Baseline Model appears to focus on the areas near the lung apices and possibly on some background artifacts. The highlighted regions are less indicative of **Pleural Effusion**, suggesting that the model may not be accurately identifying the relevant anatomy.
+- **Prediction:** **Pleural Effusion** does not appear in the Top 3 predictions. Instead, the model predicts **Edema**, **Pneumothorax**, and **Pneumonia**, which diverge from the correct diagnosis.
+
+### 3. Finetuned Model Analysis:
+- **Heatmap Focus:** The Finetuned Model's heatmap shows a noticeable adjustment in focus. It aligns more closely with reported radiological indicators of **Pleural Effusion**, indicating improved specificity in detecting relevant anatomical features.
+- **Prediction:** **Pleural Effusion** is included in the Top 3 predictions, although with a lower confidence score compared to other conditions. Confidence scores for predictions are: **Lung Opacity** (0.38), **Pleural Effusion** (0.23), and **Edema** (0.09). The presence of **Pleural Effusion**—despite the lower score—indicates an improvement in identifying the condition.
+
+### 4. Final Assessment:
+- **Verdict:** IMPROVED
+- **Summary:** The Finetuned Model demonstrated an enhanced ability to recognize features associated with **Pleural Effusion** in the heatmap analysis. Although the confidence for **Pleural Effusion** in the Finetuned Model was relatively low, the improved anatomical focus compared to the Baseline indicates that the model has learned better representations pertinent to the pathology. This suggests that the additional training on Chest X-rays using LoRA has facilitated the model to capture relevant features more effectively.
