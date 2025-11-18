@@ -89,7 +89,7 @@ def compute_zero_shot_predictions(model, processor, dataloader, device):
                 out = model.get_image_features(**{"pixel_values": image_inputs["pixel_values"]})
                 image_emb = out
 
-            image_emb = image_emb / image_emb.norm(dim=-1, keepdim=True)  # (batch, dim)
+            image_emb = image_emb / image_emb.norm(dim=-1, keepdim=True)
 
             similarity = image_emb @ text_emb.T
 

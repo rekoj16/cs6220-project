@@ -34,39 +34,23 @@ def analyze_heatmap(image_path, model="gpt-4o"):
     base64_image = encode_image(image_path)
     
     # Create the prompt
-    prompt = """You are a medical imaging AI expert analyzing chest X-ray interpretations.
-
+    prompt = """You are an expert radiologist analyzing chest X-ray interpretations and AI model behavior.
 This image shows three panels:
 1. LEFT: Original chest X-ray with ground truth labels
 2. MIDDLE: Baseline CLIP model's heatmap and predictions
 3. RIGHT: Fine-tuned model's heatmap and predictions
 
-Please provide a detailed analysis covering:
+Please provide a detailed clinical and technical analysis:
 
-1. **Ground Truth Assessment**: What pathologies are actually present?
+**Fine-tuned Model Analysis**:
+- Compare predictions to actual radiographic findings
+- For CORRECT predictions: What clinically relevant features is the model focusing on?
+- For INCORRECT predictions: What is the model misinterpreting and why?
+- Evaluate if the attention pattern demonstrates appropriate clinical reasoning
+- Compare attention strategy to baseline: Is it more anatomically informed?
 
-2. **Baseline Model Performance**: 
-   - How accurate are its predictions?
-   - Where is the attention focused (heatmap interpretation)?
-   - What errors or biases do you observe?
+Focus on explaining the "WHY" behind both the radiographic appearances and the model behaviors, connecting visual features to clinical knowledge."""
 
-3. **Fine-tuned Model Performance**:
-   - How accurate are its predictions?
-   - Where is the attention focused (heatmap interpretation)?
-   - What improvements over baseline do you see?
-
-4. **Attention Pattern Comparison**:
-   - Compare the heatmap patterns between baseline and fine-tuned
-   - Are the models looking at clinically relevant regions?
-   - Does the attention align with where these pathologies typically appear?
-
-5. **Clinical Relevance**:
-   - Would the fine-tuned model be more trustworthy for clinical use?
-   - Any concerning false positives or false negatives?
-
-6. **Overall Assessment**: Brief summary of which model performs better and why.
-
-Be specific about anatomical regions and pathology locations."""
 
     try:
         response = client.chat.completions.create(
