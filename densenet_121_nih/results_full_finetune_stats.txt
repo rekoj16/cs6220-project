@@ -1,0 +1,24 @@
+================ BASELINE NIH DENSENET121 ================
+Model Name: densenet121-res224-nih
+Classifier Head: Linear(in_features=1024, out_features=18, bias=True)
+Labels Trained On (8): ['Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia', 'Pneumothorax']
+Total Parameters: 6,966,034
+Trainable Parameters: 6,966,034
+Trainable %: 100.00%
+
+================ FINETUNED CHEXPERT14 MODEL ================
+Model Name: DenseNet121-res224-nih-chexpert14-finetuned
+Classifier Head: Linear(in_features=1024, out_features=14, bias=True)
+Labels Trained On (14): ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity', 'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
+Total Parameters: 6,961,934
+Trainable Parameters: 6,961,934
+Trainable %: 100.00%
+
+================ PARAMETER COMPARISON SUMMARY ================
+Metric                         | Baseline NIH    | Finetuned 14-label
+---------------------------------------------------------------------------
+Total Params                   | 6,966,034 | 6,961,934
+Trainable Params               | 6,966,034 | 6,961,934
+Trainable %                    | 100.00% | 100.00%
+Output Classes                 | 8 | 14
+Classifier Head                | Linear(in_features=1024, out_features=18, bias=True) | Linear(in_features=1024, out_features=14, bias=True)

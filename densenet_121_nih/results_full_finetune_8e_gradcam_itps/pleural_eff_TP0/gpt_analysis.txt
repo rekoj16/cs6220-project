@@ -1,0 +1,10 @@
+1. **Relevance of Boxed Regions:**
+   - The boxed region in the finetuned overlay is relevant to the pathology of pleural effusion. Pleural effusion typically appears as a fluid accumulation in the pleural space, often seen as a homogenous opacity in the lower lung fields on an upright chest X-ray.
+
+2. **Judgment on Bounding Boxes:**
+   - The bounding box in the finetuned model reflects correct reasoning behind the model's prediction. It highlights the lower lung fields where pleural effusion is commonly visualized.
+
+3. **Details in Boxed Regions:**
+   - In the finetuned overlay, the boxed area shows increased opacity in the lower lung zones, which is indicative of fluid accumulation consistent with pleural effusion. The gradient of the heatmap aligns with the expected location of pleural fluid, suggesting the model correctly identified the relevant features associated with pleural effusion.
+
+In contrast, the baseline model does not show any significant activation, indicating it failed to focus on the relevant anatomical regions for detecting pleural effusion. This suggests the finetuning improved the model's ability to localize and identify the pathology correctly.

@@ -1,0 +1,12 @@
+Pathology,AUROC
+Lung Lesion,0.73819745
+Consolidation,0.73164487
+Pleural Other,0.7253219
+Enlarged Cardiomediastinum,0.70656884
+Cardiomegaly,0.63970584
+Pleural Effusion,0.6204308
+Atelectasis,0.61396104
+Pneumonia,0.6128319
+Lung Opacity,0.6044239
+Edema,0.5761317
+Pneumothorax,0.32024336

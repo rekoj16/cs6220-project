@@ -1,0 +1,31 @@
+### 1. Ground Truth Verification:
+**Does the patient actually have Lung Opacity according to the label in the left panel?**  
+**Answer:** Yes
+
+### 2. Visual Attention Audit (Grad-CAM Analysis)
+- **Baseline Focus:**  
+  The red/orange hotspot from the Baseline Model appears centrally located in the lung fields. However, it lacks specificity in highlighting areas typically associated with lung opacity, such as consolidation or the specific lobes affected. There are also indications of focus near the heart, which may not correlate with lung pathology.
+
+- **Finetuned Focus:**  
+  The Finetuned Model's hotspot is also located within the lung fields, albeit lower and more pronounced compared to the Baseline. The area highlighted by the Finetuned Model aligns more closely with the radiological definition of Lung Opacity, as it appears to emphasize consolidation or fluid accumulation that is characteristic of lung pathology. 
+
+### 3. Confidence & Performance Check:
+- **Baseline Prediction Probabilities:**
+  - Edema (p=0.63)
+  - Pleural Effusion (p=0.58)
+  - Lung Opacity (p=0.53)
+
+- **Finetuned Prediction Probabilities:**
+  - Lung Opacity (p=0.37)
+  - Pleural Effusion (p=0.17)
+  - Edema (p=0.15)
+
+The Baseline model exhibits higher confidence overall compared to the Finetuned model, particularly for Edema and Pleural Effusion. However, the presence of Lung Opacity in the top three predictions for the Baseline indicates awareness but less confidence than the top prediction.
+
+### 4. Final Verdict:
+**Did the fine-tuning improve the model's reasoning?**  
+**Choice:** PARTIAL SUCCESS  
+**Explanation:** While the Finetuned model shows a more anatomically relevant focus for Lung Opacity compared to the Baseline, the confidence level is lower, and it falls short in ranking compared to other pathologies, indicating incomplete improvement in reasoning.
+
+### 5. Short Diagnostic Summary:
+This is a confirmed positive case of Lung Opacity where the Finetuned model localized the disease more accurately than the Baseline, though both models demonstrated varying confidence and relevance.
