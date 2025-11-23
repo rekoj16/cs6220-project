@@ -1,0 +1,16 @@
+{
+  "Atelectasis": 0.6386607614158331,
+  "Cardiomegaly": 0.8226248224770243,
+  "Consolidation": 0.6898669178050014,
+  "Edema": 0.7897021766048804,
+  "Enlarged Cardiomediastinum": 0.5912643269090929,
+  "Fracture": 0.6623951756509209,
+  "Lung Lesion": 0.6684217194509878,
+  "Lung Opacity": 0.6929419588879995,
+  "Effusion": 0.8365180879714467,
+  "Pleural Other": 0.7048234314428657,
+  "Pneumonia": 0.6491911753005443,
+  "Pneumothorax": 0.7340100958144531,
+  "Support Devices": 0.6990182480712274,
+  "macro_average": 0.7061106844463291
+}

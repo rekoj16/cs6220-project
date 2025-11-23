@@ -1,5 +1,7 @@
 # cs6220-project
+This project contains four pretrained models on `ChestXpert` dataset. Each subfolder contains individual model's `README` instrcution to run each.
 
+You can also see our [PPT report](https://docs.google.com/presentation/d/15Ph8bf1RSLJIzPcxWmzxRwDHENnUHQ9OQ0KCfVck9is/edit?usp=sharing)
 ## Setup
 1. `python3 -m venv cs6200` - creates a virtual environment
 2. `source cs6200/bin/activate` - activates the env
@@ -10,10 +12,5 @@
     https://www.kaggle.com/api/v1/datasets/download/willarevalo/chexpert-v10-small` - this download the dataset into your local directory instead of being cached in huggingface.
 
 ## How to request PACE GPU
-### Local Dev/Testing
-1. `salloc --gres=gpu:H100:1 --ntasks-per-node=1` - submit a request for one node with `H100` GPU and one task per node
-2. `nvidia-smi` - verift you have access to GPU
-
-### Computationally Internsive Task
-1. Change email to yours to receive slurm job status through email in `submit_job.sbatch`, and modify the run commands if you need.
-2. `sbatch submit_job.sbatch` - submit a slurm job that runs in the background
+1. `salloc --gres=gpu:H100:1 --ntasks-per-node=1 --time 01:00:00` - submit a request for one node with `H100` GPU and one task per node
+    - adjust the request time for your need
