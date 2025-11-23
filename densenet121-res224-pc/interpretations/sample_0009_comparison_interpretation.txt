@@ -1,0 +1,11 @@
+Image: sample_0009_comparison.png
+================================================================================
+
+1) Ground truth: Cardiomegaly; Enlarged Cardiomediastinum; Support Devices. Baseline top 5: Cardiomegaly (p=0.70), Effusion (p=0.63), Infiltration (p=0.63), Edema (p=0.62), Mass (p=0.62). Fine‑tuned top 5: Cardiomegaly (p=0.58), Support Devices (p=0.52), Edema (p=0.22), Enlarged Cardiomediastinum (p=0.13), Lung Opacity (p=0.10).  
+2) Both heatmaps concentrate on the cardiac silhouette and central mediastinum, with the baseline showing a broader, more diffuse hot region over the whole heart and lower mediastinum and the fine‑tuned model showing a tighter central focus over the cardiac outline (and additional attention near electrode/line sites).  
+3) These regions are anatomically appropriate for the ground‑truth labels (cardiomegaly and enlarged cardiomediastinum) and the fine‑tuned model’s attention on peripheral device areas matches the “Support Devices” label.  
+4) Overall the fine‑tuned model demonstrates more specific, clinically relevant localization and correctly promotes Support Devices higher, while the baseline’s broader focus likely contributed to false‑positive suggestions like effusion/infiltrate.
+
+
+
+

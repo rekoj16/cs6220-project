@@ -1,5 +1,8 @@
 cs6220/
 CheXpert-v1.0-small/
+densenet121-res224-pc/viz
+chexpert-v10-small.zip
+output*.txt
 archive_nih/
 misc_results-NOSAVE/
 # Byte-compiled / optimized / DLL files
