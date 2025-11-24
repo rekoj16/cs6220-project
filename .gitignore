@@ -1,6 +1,12 @@
 cs6220/
 CheXpert-v1.0-small/
 densenet121-res224-pc/viz
+densenet121-res224-pc/interpretations
+densenet121-res224-pc/result(1)_batch_32_epoch_1_lr_1e-4_rank_16_alpha_32_dropout_0.1_all-conv-layers
+densenet121-res224-pc/result(2)_batch_32_epoch_3_lr_1e-4_rank_16_alpha_32_dropout_0.1_all-conv-layers
+densenet121-res224-pc/result(3)_batch_32_epoch_5_lr_1e-4_rank_16_alpha_32_dropout_0.1_all-conv-layers
+densenet121-res224-pc/result(4)_batch_32_epoch_10_lr_1e-4_rank_16_alpha_32_dropout_0.1_all-conv-layers
+densenet121-res224-pc/result(5)_batch_32_epoch_5_lr_1e-4_rank_16_alpha_32_dropout_0.1_last-8-conv-layers
 chexpert-v10-small.zip
 output*.txt
 archive_nih/
