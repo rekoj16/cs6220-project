@@ -6,34 +6,18 @@ from pathlib import Path
 import time
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def encode_image(image_path):
-    """Encode image to base64 string."""
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 
 def analyze_heatmap(image_path, model="gpt-4o"):
-    """
-    Send heatmap image to OpenAI API for analysis.
-    
-    Args:
-        image_path: Path to the heatmap comparison image
-        model: OpenAI model to use (gpt-4o, gpt-4o-mini, etc.)
-    
-    Returns:
-        Dictionary with analysis results
-    """
-    
-    # Encode the image
     base64_image = encode_image(image_path)
     
-    # Create the prompt
     prompt = """You are an expert radiologist analyzing chest X-ray interpretations and AI model behavior.
 This image shows three panels:
 1. LEFT: Original chest X-ray with ground truth labels
@@ -67,14 +51,14 @@ Focus on explaining the "WHY" behind both the radiographic appearances and the m
                             "type": "image_url",
                             "image_url": {
                                 "url": f"data:image/png;base64,{base64_image}",
-                                "detail": "high"  # Use "high" for detailed analysis
+                                "detail": "high"
                             }
                         }
                     ]
                 }
             ],
             max_tokens=2000,
-            temperature=0.3  # Lower temperature for more consistent analysis
+            temperature=0.3
         )
         
         analysis = response.choices[0].message.content
@@ -97,19 +81,8 @@ Focus on explaining the "WHY" behind both the radiographic appearances and the m
 
 
 def process_heatmap_directory(input_dir="heatmaps", output_dir="explanations", model="gpt-4o"):
-    """
-    Process all heatmap images in a directory and save explanations.
-    
-    Args:
-        input_dir: Directory containing heatmap comparison images
-        output_dir: Directory to save explanation JSON and text files
-        model: OpenAI model to use
-    """
-    
-    # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
-    # Find all comparison images
     input_path = Path(input_dir)
     image_files = list(input_path.glob("*_comparison.png"))
     
@@ -120,13 +93,11 @@ def process_heatmap_directory(input_dir="heatmaps", output_dir="explanations", m
     for idx, image_path in enumerate(image_files, 1):
         print(f"\n[{idx}/{len(image_files)}] Analyzing {image_path.name}...")
         
-        # Analyze the image
         result = analyze_heatmap(str(image_path), model=model)
         
         if "error" not in result:
             print(f"✓ Analysis complete ({result['tokens_used']} tokens)")
             
-            # Save individual text file
             output_name = image_path.stem.replace("_comparison", "")
             txt_path = Path(output_dir) / f"{output_name}_explanation.txt"
             
@@ -143,37 +114,25 @@ def process_heatmap_directory(input_dir="heatmaps", output_dir="explanations", m
         
         all_results.append(result)
         
-        # Rate limiting: sleep between requests to avoid hitting API limits
         if idx < len(image_files):
-            time.sleep(1)  # Adjust based on your API rate limits
+            time.sleep(1)
     
-    # Save all results to JSON
     json_path = Path(output_dir) / "all_explanations.json"
     with open(json_path, "w") as f:
         json.dump(all_results, f, indent=2)
     
-    print(f"\n✓ All results saved to {json_path}")
+    print(f"\n All results saved to {json_path}")
     
-    # Print summary
     successful = sum(1 for r in all_results if "error" not in r)
     total_tokens = sum(r.get("tokens_used", 0) for r in all_results)
     
     print(f"\nSummary:")
     print(f"  Successfully analyzed: {successful}/{len(image_files)}")
     print(f"  Total tokens used: {total_tokens:,}")
-    print(f"  Estimated cost (gpt-4o): ${total_tokens * 0.000005:.4f}")  # Rough estimate
+    print(f"  Estimated cost (gpt-4o): ${total_tokens * 0.000005:.4f}")
 
 
 def analyze_single_image(image_path, output_path=None, model="gpt-4o"):
-    """
-    Analyze a single heatmap image.
-    
-    Args:
-        image_path: Path to the image
-        output_path: Optional path to save explanation (if None, prints to console)
-        model: OpenAI model to use
-    """
-    
     print(f"Analyzing {image_path}...")
     result = analyze_heatmap(image_path, model=model)
     
@@ -211,7 +170,6 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Check for API key
     if not os.getenv("OPENAI_API_KEY"):
         print("Error: OPENAI_API_KEY not found in environment variables")
         print("\nPlease create a .env file in the same directory with:")

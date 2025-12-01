@@ -51,7 +51,7 @@ class ViTGradCAM:
         cam = torch.relu(torch.matmul(activations, weights.transpose(-1, -2)))
         cam = cam.squeeze(-1).squeeze(0)
 
-        cam = cam[1:]  # remove CLS token
+        cam = cam[1:]
         h = w = int(cam.shape[0] ** 0.5)
         cam = cam.reshape(h, w)
 
@@ -77,7 +77,6 @@ def load_image(path, processor):
     return pixel_values, img
 
 def get_ground_truth_labels(row):
-    """Extract positive ground truth labels from the CSV row."""
     gt_labels = []
     for label in CHEXPERT_LABELS:
         if label in row and row[label] == 1.0:
@@ -85,7 +84,6 @@ def get_ground_truth_labels(row):
     return gt_labels if gt_labels else ["No positive findings"]
 
 def get_top_predictions(logits, top_k=3, threshold=None):
-    """Get top-k predicted labels based on logits."""
     sorted_indices = torch.argsort(logits, descending=True)
     predictions = []
     
