@@ -10,11 +10,11 @@ from openai import OpenAI
 # CONFIG
 # ============================================================
 
-INPUT_PANEL = "results_full_finetune_8e_gradcam/Pleural_Effusion/Pleural_Effusion_extra_TP_0.png"
-CLASS_NAME = "Pleural Effusion"
+INPUT_PANEL = "results_full_finetune_8e_gradcam/Atelectasis/Atelectasis_extra_TN_1.png"
+CLASS_NAME = "Atelectasis"
 
 OUTPUT_ROOT = "results_full_finetune_8e_gradcam_itps"
-CASE_NAME = "pleural_eff_TP0"
+CASE_NAME = "atelect_TN1"
 
 INTENSITY_V_THRESH = 0.15
 INTENSITY_S_THRESH = 0.1
@@ -174,6 +174,13 @@ def main():
     os.makedirs(case_dir, exist_ok=True)
 
     panel_pil, panel_np = load_panel(INPUT_PANEL)
+
+    panel_pil, panel_np = load_panel(INPUT_PANEL)
+
+    pid = os.path.basename(os.path.dirname(INPUT_PANEL))
+    print("Panel corresponds to class folder / patient group:", pid)
+
+
     crops, locs = split_quadrants(panel_np)
 
     bo = crops["baseline"]

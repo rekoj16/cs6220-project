@@ -1,0 +1,25 @@
+1. **Relevance of Boxed Regions to Atelectasis:**
+
+   - **Baseline Model:**
+     The boxed region in the baseline model's heatmap overlay appears to cover the upper lung fields and part of the mediastinum. These areas are not typically where atelectasis is primarily identified, which usually involves volume loss and increased density in the affected lung area, often seen in the lower lobes or specific segments.
+
+   - **Finetuned Model:**
+     The finetuned model shows no significant activation, suggesting it does not identify any relevant features indicative of atelectasis.
+
+2. **Judgment on Bounding Boxes:**
+
+   - **Baseline Model:**
+     The bounding box reflects incorrect reasoning. The highlighted areas do not correspond to typical radiographic signs of atelectasis, such as increased opacity, displacement of interlobar fissures, or elevation of the diaphragm.
+
+   - **Finetuned Model:**
+     The lack of activation suggests that the model does not find relevant features for atelectasis, which aligns with the true negative (TN) prediction.
+
+3. **Explanation:**
+
+   - **Baseline Model:**
+     The incorrect activation in the baseline model may be due to the model focusing on high-contrast areas or edges rather than specific pathological signs. This can happen if the model is not well-trained to distinguish between normal anatomical variations and pathological changes.
+
+   - **Finetuned Model:**
+     The finetuned model's lack of activation indicates it correctly does not identify features of atelectasis, which is consistent with the true negative prediction. This suggests improved specificity and a better understanding of the relevant features for atelectasis, avoiding false positives.
+
+In summary, the baseline model incorrectly highlights irrelevant regions, while the finetuned model correctly shows no significant activation, aligning with the absence of atelectasis in this case.

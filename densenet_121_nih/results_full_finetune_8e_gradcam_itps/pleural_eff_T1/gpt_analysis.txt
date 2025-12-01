@@ -1,0 +1,12 @@
+1. **Relevance of Boxed Regions:**
+   - The boxed regions in the finetuned model's heatmap overlay (bottom-left) are not relevant to the pathology of Pleural Effusion. Pleural effusion typically presents as a blunting of the costophrenic angles, a meniscus sign, or fluid layering on the lateral chest wall, usually in the lower zones of the chest X-ray.
+
+2. **Judgment on Bounding Boxes:**
+   - The bounding boxes reflect incorrect reasoning behind the model's prediction. The activation is centered in the mid and upper thoracic regions rather than the lower zones where pleural effusion signs are typically observed.
+
+3. **Explanation:**
+   - **Incorrect and Irrelevant Activation:**
+     - The finetuned model is focusing on the central thoracic area, which is not typically where pleural effusions manifest. This could be due to the model picking up on irrelevant features such as normal anatomical structures or artifacts unrelated to pleural effusion.
+     - The model may have been misled by patterns or textures in the lung fields or mediastinum that are not indicative of effusion but might have statistical correlation in the training data.
+
+In summary, the model's attention is misplaced, and it does not correctly identify the areas indicative of pleural effusion, leading to a false positive prediction.

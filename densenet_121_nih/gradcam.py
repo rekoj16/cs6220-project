@@ -16,9 +16,9 @@ import torchvision.transforms as T
 CHEXPERT_ROOT = "CheXpert-v1.0-small"
 VAL_CSV = os.path.join(CHEXPERT_ROOT, "valid.csv")
 
-FINETUNED_MODEL_PATH = "results_full_finetune/models/densenet121nih_chexpert14_finetuned.pt"
+FINETUNED_MODEL_PATH = "results_full_finetune_8e/models/densenet121nih_chexpert14_finetuned.pt"
 
-SAVE_DIR = "results_full_finetune_gradcam"
+SAVE_DIR = "results_full_finetune_8e_gradcam"
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 IMG_SIZE = 224
@@ -94,7 +94,6 @@ class CheXpertDataset(torch.utils.data.Dataset):
         labels = row[CHEXPERT_CLASSES].values.astype(np.float32)
         return img_t, labels, img_path
 
-
 # ============================================================
 # MODEL LOADERS
 # ============================================================
@@ -104,7 +103,6 @@ def load_baseline(device):
     m.op_threshs = None
     return m.to(device)
 
-
 def load_finetuned(path, device):
     ckpt = torch.load(path, map_location=device)
     m = xrv.models.DenseNet(weights="densenet121-res224-nih")
@@ -113,7 +111,6 @@ def load_finetuned(path, device):
     m.classifier = nn.Linear(m.classifier.in_features, len(ckpt["classes"]))
     m.load_state_dict(ckpt["state_dict"])
     return m.to(device), ckpt["classes"]
-
 
 # ============================================================
 # EVALUATION
@@ -148,7 +145,6 @@ def evaluate_models(baseline, finetuned, loader, device):
 
     return y_true, y_prob_b, y_prob_f, all_paths
 
-
 # ============================================================
 # SAMPLING BASED ON FINETUNED MODEL
 # ============================================================
@@ -180,13 +176,11 @@ def pick_balanced_indices(y_true, y_prob_f, chex_idx, n=10):
 
     return selected[:n]
 
-
 # ============================================================
 # GRAD-CAM
 # ============================================================
 def get_last_conv(model):
     return model.features.denseblock4.denselayer16.conv2
-
 
 def compute_gradcam(model, img_t, target_idx, conv_layer, device, img_size=IMG_SIZE):
     acts = {}
@@ -212,7 +206,6 @@ def compute_gradcam(model, img_t, target_idx, conv_layer, device, img_size=IMG_S
     G = grads["value"]
 
     weights = G.mean(dim=(2, 3), keepdim=True)
-
     cam = (weights * A).sum(dim=1, keepdim=True)
     cam = F.relu(cam)
 
@@ -224,7 +217,6 @@ def compute_gradcam(model, img_t, target_idx, conv_layer, device, img_size=IMG_S
         cam = torch.zeros_like(cam)
 
     cam_raw = cam[0, 0].detach().cpu().numpy()
-
     cam_up = F.interpolate(
         cam,
         size=(img_size, img_size),
@@ -236,7 +228,6 @@ def compute_gradcam(model, img_t, target_idx, conv_layer, device, img_size=IMG_S
     h2.remove()
 
     return cam_up, cam_raw, float(prob.item())
-
 
 # ============================================================
 # PANEL PLOT
@@ -273,6 +264,15 @@ def plot_panel(
     plt.savefig(save_path, dpi=200)
     plt.close()
 
+# ============================================================
+# PATIENT-ID HELPER (NEW)
+# ============================================================
+def get_patient_id_from_path(img_path):
+    parts = img_path.replace("\\", "/").split("/")
+    for p in parts:
+        if p.startswith("patient"):
+            return p
+    return "patientUNKNOWN"
 
 # ============================================================
 # PANEL GENERATION HELPER
@@ -328,7 +328,6 @@ def generate_and_save_panel(
         save_path,
     )
 
-
 # ============================================================
 # MAIN
 # ============================================================
@@ -352,6 +351,9 @@ def main():
 
     overlap_chex_labels = [chex_label for (_, chex_label) in OVERLAP_PAIRS]
 
+    # ============================================================
+    # LOOP 1 — NIH–CHEXPERT OVERLAPS
+    # ============================================================
     for nih_label, chex_label in OVERLAP_PAIRS:
         nih_idx = NIH_CLASSES.index(nih_label)
         chex_idx = CHEXPERT_CLASSES.index(chex_label)
@@ -362,7 +364,9 @@ def main():
         idxs = pick_balanced_indices(y_true, y_prob_f, chex_idx, n=NUM_IMAGES_PER_CLASS)
 
         for k, idx in enumerate(idxs):
-            save_name = f"{chex_label.replace(' ', '_')}_{k}.png"
+            patient_id = get_patient_id_from_path(dataset[idx][2])
+            save_name = f"{chex_label.replace(' ', '_')}_{patient_id}_{k}.png"
+
             generate_and_save_panel(
                 idx=idx,
                 dataset=dataset,
@@ -418,65 +422,28 @@ def main():
 
         base_name = chex_label.replace(" ", "_")
 
-        generate_and_save_panel(
-            idx=idx_max,
-            dataset=dataset,
-            chex_idx=chex_idx,
-            nih_idx=nih_idx,
-            y_prob_b=y_prob_b,
-            y_prob_f=y_prob_f,
-            conv_b=conv_b,
-            conv_f=conv_f,
-            out_dir=out_dir,
-            chex_label=chex_label,
-            save_name=f"{base_name}_extra_maxprob_0.png",
-        )
+        patient_id = get_patient_id_from_path(dataset[idx_max][2])
+        save_name = f"{base_name}_{patient_id}_extra_maxprob_0.png"
+        generate_and_save_panel(idx_max, dataset, chex_idx, nih_idx, y_prob_b, y_prob_f, conv_b, conv_f, out_dir, chex_label, save_name)
 
-        generate_and_save_panel(
-            idx=idx_min,
-            dataset=dataset,
-            chex_idx=chex_idx,
-            nih_idx=nih_idx,
-            y_prob_b=y_prob_b,
-            y_prob_f=y_prob_f,
-            conv_b=conv_b,
-            conv_f=conv_f,
-            out_dir=out_dir,
-            chex_label=chex_label,
-            save_name=f"{base_name}_extra_minprob_0.png",
-        )
+        patient_id = get_patient_id_from_path(dataset[idx_min][2])
+        save_name = f"{base_name}_{patient_id}_extra_minprob_0.png"
+        generate_and_save_panel(idx_min, dataset, chex_idx, nih_idx, y_prob_b, y_prob_f, conv_b, conv_f, out_dir, chex_label, save_name)
 
         for j, idx_thr in enumerate(near_thresh_idxs):
-            generate_and_save_panel(
-                idx=idx_thr,
-                dataset=dataset,
-                chex_idx=chex_idx,
-                nih_idx=nih_idx,
-                y_prob_b=y_prob_b,
-                y_prob_f=y_prob_f,
-                conv_b=conv_b,
-                conv_f=conv_f,
-                out_dir=out_dir,
-                chex_label=chex_label,
-                save_name=f"{base_name}_extra_thresh_{j}.png",
-            )
+            patient_id = get_patient_id_from_path(dataset[idx_thr][2])
+            save_name = f"{base_name}_{patient_id}_extra_thresh_{j}.png"
+            generate_and_save_panel(idx_thr, dataset, chex_idx, nih_idx, y_prob_b, y_prob_f, conv_b, conv_f, out_dir, chex_label, save_name)
 
         for tag, idx_list in extra_sets.items():
             for j, idx_cf in enumerate(idx_list):
-                generate_and_save_panel(
-                    idx=idx_cf,
-                    dataset=dataset,
-                    chex_idx=chex_idx,
-                    nih_idx=nih_idx,
-                    y_prob_b=y_prob_b,
-                    y_prob_f=y_prob_f,
-                    conv_b=conv_b,
-                    conv_f=conv_f,
-                    out_dir=out_dir,
-                    chex_label=chex_label,
-                    save_name=f"{base_name}_extra_{tag}_{j}.png",
-                )
+                patient_id = get_patient_id_from_path(dataset[idx_cf][2])
+                save_name = f"{base_name}_{patient_id}_extra_{tag}_{j}.png"
+                generate_and_save_panel(idx_cf, dataset, chex_idx, nih_idx, y_prob_b, y_prob_f, conv_b, conv_f, out_dir, chex_label, save_name)
 
+    # ============================================================
+    # LOOP 2 — REMAINING CHEXPERT-ONLY CLASSES
+    # ============================================================
     for chex_idx, chex_label in enumerate(CHEXPERT_CLASSES):
         if chex_label in overlap_chex_labels:
             continue
@@ -489,7 +456,9 @@ def main():
         idxs = pick_balanced_indices(y_true, y_prob_f, chex_idx, n=NUM_IMAGES_PER_CLASS)
 
         for k, idx in enumerate(idxs):
-            save_name = f"{chex_label.replace(' ', '_')}_{k}.png"
+            patient_id = get_patient_id_from_path(dataset[idx][2])
+            save_name = f"{chex_label.replace(' ', '_')}_{patient_id}_{k}.png"
+
             generate_and_save_panel(
                 idx=idx,
                 dataset=dataset,
@@ -545,64 +514,24 @@ def main():
 
         base_name = chex_label.replace(" ", "_")
 
-        generate_and_save_panel(
-            idx=idx_max,
-            dataset=dataset,
-            chex_idx=chex_idx,
-            nih_idx=nih_idx_fallback,
-            y_prob_b=y_prob_b,
-            y_prob_f=y_prob_f,
-            conv_b=conv_b,
-            conv_f=conv_f,
-            out_dir=out_dir,
-            chex_label=chex_label,
-            save_name=f"{base_name}_extra_maxprob_0.png",
-        )
+        patient_id = get_patient_id_from_path(dataset[idx_max][2])
+        save_name = f"{base_name}_{patient_id}_extra_maxprob_0.png"
+        generate_and_save_panel(idx_max, dataset, chex_idx, nih_idx_fallback, y_prob_b, y_prob_f, conv_b, conv_f, out_dir, chex_label, save_name)
 
-        generate_and_save_panel(
-            idx=idx_min,
-            dataset=dataset,
-            chex_idx=chex_idx,
-            nih_idx=nih_idx_fallback,
-            y_prob_b=y_prob_b,
-            y_prob_f=y_prob_f,
-            conv_b=conv_b,
-            conv_f=conv_f,
-            out_dir=out_dir,
-            chex_label=chex_label,
-            save_name=f"{base_name}_extra_minprob_0.png",
-        )
+        patient_id = get_patient_id_from_path(dataset[idx_min][2])
+        save_name = f"{base_name}_{patient_id}_extra_minprob_0.png"
+        generate_and_save_panel(idx_min, dataset, chex_idx, nih_idx_fallback, y_prob_b, y_prob_f, conv_b, conv_f, out_dir, chex_label, save_name)
 
         for j, idx_thr in enumerate(near_thresh_idxs):
-            generate_and_save_panel(
-                idx=idx_thr,
-                dataset=dataset,
-                chex_idx=chex_idx,
-                nih_idx=nih_idx_fallback,
-                y_prob_b=y_prob_b,
-                y_prob_f=y_prob_f,
-                conv_b=conv_b,
-                conv_f=conv_f,
-                out_dir=out_dir,
-                chex_label=chex_label,
-                save_name=f"{base_name}_extra_thresh_{j}.png",
-            )
+            patient_id = get_patient_id_from_path(dataset[idx_thr][2])
+            save_name = f"{base_name}_{patient_id}_extra_thresh_{j}.png"
+            generate_and_save_panel(idx_thr, dataset, chex_idx, nih_idx_fallback, y_prob_b, y_prob_f, conv_b, conv_f, out_dir, chex_label, save_name)
 
         for tag, idx_list in extra_sets.items():
             for j, idx_cf in enumerate(idx_list):
-                generate_and_save_panel(
-                    idx=idx_cf,
-                    dataset=dataset,
-                    chex_idx=chex_idx,
-                    nih_idx=nih_idx_fallback,
-                    y_prob_b=y_prob_b,
-                    y_prob_f=y_prob_f,
-                    conv_b=conv_b,
-                    conv_f=conv_f,
-                    out_dir=out_dir,
-                    chex_label=chex_label,
-                    save_name=f"{base_name}_extra_{tag}_{j}.png",
-                )
+                patient_id = get_patient_id_from_path(dataset[idx_cf][2])
+                save_name = f"{base_name}_{patient_id}_extra_{tag}_{j}.png"
+                generate_and_save_panel(idx_cf, dataset, chex_idx, nih_idx_fallback, y_prob_b, y_prob_f, conv_b, conv_f, out_dir, chex_label, save_name)
 
     print(f"Saved Grad-CAM panels to: {SAVE_DIR}")
 

@@ -1,0 +1,13 @@
+To evaluate the Grad-CAM overlays for pneumothorax detection:
+
+1. **Relevance of Boxed Regions:**
+   - The boxed regions should ideally highlight areas where signs of pneumothorax are present, such as the pleural line or absence of lung markings in the periphery.
+
+2. **Judgment on Bounding Boxes:**
+   - In this case, the Grad-CAM overlays do not show significant activation in areas typically associated with pneumothorax, such as the lung apex or lateral chest wall. The activations are minimal, suggesting the model did not focus on relevant regions for pneumothorax.
+
+3. **Explanation:**
+   - **Irrelevant Activation:** The model's low activation in the boxed regions indicates it may not have identified key features of pneumothorax. This could be due to a lack of distinctive pneumothorax features in the x-ray or the model's inability to differentiate subtle signs.
+   - **Incorrect Reasoning:** The activations do not correspond to typical pneumothorax indicators, which might suggest the model is focusing on irrelevant features, possibly due to overfitting or insufficient training data on pneumothorax cases.
+
+The model's prediction of a true negative (TN) aligns with the low probability scores, indicating it did not detect pneumothorax, which is consistent with the lack of relevant activation.
