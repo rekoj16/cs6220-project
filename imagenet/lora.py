@@ -23,19 +23,10 @@ NUM_EPOCHS = 5
 WORKER_COUNT = 1 
 
 # settting up labels and processcing function
-CLASS_NAMES = [
-    'Atelectasis', 
-    'Cardiomegaly', 
-    'Consolidation', 
-    'Edema', 
-    'Enlarged Cardiomediastinum',
-    'Lung Lesion',
-    'Lung Opacity',
-    'Pneumonia',
-    'Pneumothorax',
-    'Pleural Effusion',
-    'Pleural Other'
-]
+CLASS_NAMES = ['Atelectasis', 'Cardiomegaly', 'Consolidation', 'Edema', 
+               'Enlarged Cardiomediastinum', 'Lung Lesion', 'Lung Opacity', 
+               'Pneumonia', 'Pneumothorax', 'Pleural Effusion','Pleural Other'
+              ]
 
 #converting the values: NaN to 0, -1 to 1
 def process_chexpert_labels(df, class_names):
@@ -85,7 +76,8 @@ class CheXpertDataset(Dataset):
 
 print("Setting up DataLoaders...")
 # create the dataloaders
-train_dataset = CheXpertDataset(process_chexpert_labels(panda.read_csv(TRAIN_CSV_PATH), CLASS_NAMES), IMAGE_ROOT_DIR, CLASS_NAMES, train_transform)
+train_dataset = CheXpertDataset(process_chexpert_labels(panda.read_csv(TRAIN_CSV_PATH), CLASS_NAMES), 
+                                IMAGE_ROOT_DIR, CLASS_NAMES, train_transform)
 train_loader = DataLoader(
     train_dataset,
     batch_size=BATCH_SIZE,
@@ -144,7 +136,7 @@ early_stopping_patience = 2 # this would stop after 2 epochs of no improvement
 adapter_save_dir = "/home/hice1/achen448/scratch/CS6220/cs6220-project/imagenet/results/lora5"
 print("\nstarting LoRA fine-tuning...")
 for epoch in range(NUM_EPOCHS):
-    print(f"\n--- Epoch {epoch + 1}/{NUM_EPOCHS} ---")
+    print(f"\nEpoch {epoch + 1}/{NUM_EPOCHS}")
     # start training phase
     lora_model.train()
     running_loss_30_batch = 0.0

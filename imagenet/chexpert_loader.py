@@ -11,10 +11,8 @@ ROOT_DIR = "/home/hice1/achen448/scratch/CS6220/cs6220-project/dataset/"
 BATCH_SIZE = 32
 NUM_CLASSES = 11
 CLASSIFICATIONS = [
-    'Atelectasis', 'Cardiomegaly', 'Consolidation', 'Edema', 
-    'Enlarged Cardiomediastinum', 'Lung Lesion',
-    'Lung Opacity', 'Pneumonia', 'Pneumothorax', 'Pleural Effusion',
-    'Pleural Other'
+    'Atelectasis', 'Cardiomegaly', 'Consolidation', 'Edema', 'Enlarged Cardiomediastinum', 'Lung Lesion',
+    'Lung Opacity', 'Pneumonia', 'Pneumothorax', 'Pleural Effusion', 'Pleural Other'
 ]
 
 def process_chexpert_labels(df, class_names):
