@@ -8,7 +8,7 @@ MODEL_ID = "gpt-4o-mini"
 # easy: "/home/hice1/achen448/scratch/CS6220/cs6220-project/imagenet/heatmaps_refined_batch1/patient64740/study1/view1_frontal/Enlarged Cardiomediastinum_comparison.png"
 # avg: "/home/hice1/achen448/scratch/CS6220/cs6220-project/imagenet/heatmaps_refined_batch1/patient64720/study1/view1_frontal/Pleural Effusion_comparison.png"
 # hard: /home/hice1/achen448/scratch/CS6220/cs6220-project/imagenet/heatmaps_refined_batch1/patient64726/study1/view1_frontal/Enlarged Cardiomediastinum_comparison.png
-TEST_IMAGE_PATH = "/home/hice1/achen448/scratch/CS6220/cs6220-project/imagenet/heatmaps_refined_batch1/patient64720/study1/view1_frontal/Pleural Effusion_comparison.png"
+EVAL_IMG_PATH = "/home/hice1/achen448/scratch/CS6220/cs6220-project/imagenet/heatmaps_refined_batch1/patient64720/study1/view1_frontal/Pleural Effusion_comparison.png"
 
 def encode_image(image_path):
     """Encodes an image to base64 string."""
@@ -16,7 +16,7 @@ def encode_image(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 # send the image and prompt to GPT-4o-mini for analysis
 def generate_analysis(client, image_path):
-    base64_image = encode_image(image_path)
+    base_img = encode_image(image_path)
     filename = os.path.basename(image_path)
     pathology_name = filename.split("_comparison")[0]
     prompt = f"""
@@ -61,7 +61,7 @@ def generate_analysis(client, image_path):
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}",
+                                "url": f"data:image/jpeg;base64,{base_img}",
                                 "detail": "high" 
                             },
                         },
@@ -77,22 +77,18 @@ if __name__ == "__main__":
     
     client = OpenAI(api_key=API_KEY)
     
-    print(f"--- Analyzing image: {os.path.basename(TEST_IMAGE_PATH)} ---")
-    print(f"--- Using Model: {MODEL_ID} ---")
+    print(f"Analyzing image: {os.path.basename(EVAL_IMG_PATH)}")
     
-    if not os.path.exists(TEST_IMAGE_PATH):
-        print(f"Error: File not found at {TEST_IMAGE_PATH}")
+    if not os.path.exists(EVAL_IMG_PATH):
+        print(f"Error: File not found at {EVAL_IMG_PATH}")
         print("Please update TEST_IMAGE_PATH variable.")
         exit()
 
-    analysis = generate_analysis(client, TEST_IMAGE_PATH)
+    analysis = generate_analysis(client, EVAL_IMG_PATH)
     
-    print("\n--- Diagnosis & Reasoning ---\n")
+    print("\nDiagnosis & Reasoning\n")
     print(analysis)
     print("\n")
-    
     # Save the analysis to a text file next to the image
-    output_txt_path = TEST_IMAGE_PATH.replace(".png", "_analysis.txt")
-    with open(output_txt_path, "w") as f:
+    with open(EVAL_IMG_PATH.replace(".png", "_analysis.txt"), "w") as f:
         f.write(analysis)
-    print(f"Analysis saved to: {output_txt_path}")

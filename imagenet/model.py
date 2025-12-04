@@ -4,17 +4,17 @@ import torchvision.models as models
 from torchmetrics.classification import MultilabelAUROC
 from tqdm import tqdm
 import os
-import matplotlib.pyplot as plt
-import pandas as pd
+import matplotlib.pyplot as plot
+import pandas as panda
 import numpy as np
 
 # import from the chexpert_loader.py
 try:
-    from chexpert_loader import val_loader, NUM_CLASSES, CLASS_NAMES
+    from chexpert_loader import val_loader, NUM_CLASSES, CLASSIFICATIONS
     print("Imported 'val_loader' and 'NUM_CLASSES' from chexpert_loader.py")
-    if NUM_CLASSES != 12 or len(CLASS_NAMES) != 12:
-        print(f"Warning: Expected 12 classes, but found {NUM_CLASSES} and {len(CLASS_NAMES)} labels.")
-    print(f"Found {NUM_CLASSES} classes: {CLASS_NAMES}")
+    if NUM_CLASSES != 12 or len(CLASSIFICATIONS) != 12:
+        print(f"Warning: Expected 12 classes, but found {NUM_CLASSES} and {len(CLASSIFICATIONS)} labels.")
+    print(f"Found {NUM_CLASSES} classes: {CLASSIFICATIONS}")
 except ImportError:
     print("could not import from 'chexpert_loader.py'.")
     exit()
@@ -24,15 +24,14 @@ except Exception as e:
 
 #seting up the 12-Class Model
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using device: {device}")
 model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
-num_features = model.classifier[1].in_features
-model.classifier[1] = nn.Linear(in_features=num_features, out_features=NUM_CLASSES)
+feature_size = model.classifier[1].in_features
+model.classifier[1] = nn.Linear(in_features=feature_size, out_features=NUM_CLASSES)
 print(f"Model classifier replaced. Output features: {NUM_CLASSES}")
 model.to(device)
 
 # setting up the auroc metric
-auroc_metric = MultilabelAUROC(
+auroc = MultilabelAUROC(
     num_labels=NUM_CLASSES, 
     average="none" 
 ).to(device)
@@ -42,25 +41,22 @@ auroc_metric = MultilabelAUROC(
 print("\nStarting baseline evaluation")
 model.eval()
 with torch.no_grad():
-    for images, labels in tqdm(val_loader, desc="Evaluating Baseline"):
-        images = images.to(device)
+    for img, labels in tqdm(val_loader, desc="Evaluating Baseline"):
+        img = img.to(device)
         labels = labels.to(device) 
-        outputs = model(images)
-        preds = torch.sigmoid(outputs)
-        auroc_metric.update(preds, labels.int())
+        auroc.update(torch.sigmoid(model(img.to(device))), labels.int())
 
 # the final scores per class
-individual_auroc_scores = auroc_metric.compute()
-scores_np = individual_auroc_scores.cpu().numpy()
-macro_avg_auroc = np.mean(scores_np)
+scores_np = auroc.compute().cpu().numpy()
+avg_auroc = np.mean(scores_np)
 
-print("\n Baseline Results")
-print(f"Overall (Macro) AUROC: {macro_avg_auroc:.4f}")
+print("\nBaseline Results")
+print(f"Overall AUROC: {avg_auroc:.4f}")
 print("Individual Scores by Pathology:")
 
 # create a dataframe for later graphs
-results_df = pd.DataFrame({
-    'Pathology': CLASS_NAMES,
+results_df = panda.DataFrame({
+    'Pathology': CLASSIFICATIONS,
     'AUROC': scores_np
 })
 results_df = results_df.sort_values(by='AUROC', ascending=False)
@@ -74,24 +70,24 @@ except Exception as e:
     print(f"Error saving CSV file: {e}")
 
 # generate and save the bar graph
-plot_file_name = "baseline_auroc.png"
+graph_file_name = "baseline_auroc.png"
 try:
-    plt.figure(figsize=(10, 8))
-    plt.barh(results_df['Pathology'], results_df['AUROC'])
-    plt.gca().invert_yaxis()
-    plt.xlabel('AUROC Score')
-    plt.ylabel('Pathology')
-    plt.title('Baseline (Zero-Shot) AUROC Scores by Pathology')
-    plt.xlim(0, 1.0)
+    plot.figure(figsize=(10, 8))
+    plot.barh(results_df['Pathology'], results_df['AUROC'])
+    plot.gca().invert_yaxis()
+    plot.xlabel('AUROC Score')
+    plot.ylabel('Pathology')
+    plot.title('Baseline (Zero-Shot) AUROC Scores by Pathology')
+    plot.xlim(0, 1.0)
     
     for index, value in enumerate(results_df['AUROC']):
-        plt.text(value + 0.01, index, f"{value:.3f}", va='center')
+        plot.text(value + 0.01, index, f"{value:.3f}", va='center')
         
-    plt.tight_layout()
-    plt.savefig(plot_file_name)
-    print(f"saved bar graph to: {os.path.abspath(plot_file_name)}")
+    plot.tight_layout()
+    plot.savefig(graph_file_name)
+    print(f"saved bar graph to: {os.path.abspath(graph_file_name)}")
 
 except Exception as e:
     print(f"Error saving plot: {e}")
 
-auroc_metric.reset()
+auroc.reset()

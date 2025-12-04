@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import pandas as pd
+import pandas as panda
 import numpy as np
 import os
 from torch.utils.data import Dataset, DataLoader
@@ -9,7 +9,7 @@ from torchvision import transforms, models
 from PIL import Image
 from tqdm import tqdm
 import time
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plot
 from peft import LoraConfig, get_peft_model
 
 TRAIN_CSV_PATH = "/home/hice1/achen448/scratch/CS6220/cs6220-project/dataset/CheXpert-v1.0-small/train.csv"
@@ -85,9 +85,7 @@ class CheXpertDataset(Dataset):
 
 print("Setting up DataLoaders...")
 # create the dataloaders
-train_df_raw = pd.read_csv(TRAIN_CSV_PATH)
-train_df = process_chexpert_labels(train_df_raw, CLASS_NAMES)
-train_dataset = CheXpertDataset(train_df, IMAGE_ROOT_DIR, CLASS_NAMES, train_transform)
+train_dataset = CheXpertDataset(process_chexpert_labels(panda.read_csv(TRAIN_CSV_PATH), CLASS_NAMES), IMAGE_ROOT_DIR, CLASS_NAMES, train_transform)
 train_loader = DataLoader(
     train_dataset,
     batch_size=BATCH_SIZE,
@@ -96,9 +94,7 @@ train_loader = DataLoader(
 )
 
 # create the validation dataloader
-val_df_raw = pd.read_csv(VAL_CSV_PATH)
-val_df = process_chexpert_labels(val_df_raw, CLASS_NAMES)
-val_dataset = CheXpertDataset(val_df, IMAGE_ROOT_DIR, CLASS_NAMES, val_transform)
+val_dataset = CheXpertDataset(process_chexpert_labels(panda.read_csv(VAL_CSV_PATH), CLASS_NAMES), IMAGE_ROOT_DIR, CLASS_NAMES, val_transform)
 val_loader = DataLoader(
     val_dataset,
     batch_size=BATCH_SIZE,
@@ -113,19 +109,18 @@ print(f"Valid loader: {len(val_loader)} batches")
 print("Setting up model and applying LoRA...")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
-num_features = model.classifier[1].in_features
-model.classifier[1] = nn.Linear(in_features=num_features, out_features=NUM_CLASSES)
-target_modules = []
+model.classifier[1] = nn.Linear(in_features=model.classifier[1].in_features, out_features=NUM_CLASSES)
+target = []
 for name, module in model.named_modules():
     if isinstance(module, nn.Conv2d):
         if module.groups == 1:
-            target_modules.append(name)
-target_modules.append("classifier.1") 
-print(f"found {len(target_modules)} modules to target with LoRA.")
+            target.append(name)
+target.append("classifier.1") 
+print(f"found {len(target)} modules to target with LoRA.")
 lora_config = LoraConfig(
     r=8,
     lora_alpha=16,
-    target_modules=target_modules,
+    target_modules=target,
     lora_dropout=0.05,
     bias="none",
 )
@@ -138,7 +133,6 @@ lora_model.to(device)
 criterion = nn.BCEWithLogitsLoss()
 optimizer = optim.Adam(lora_model.parameters(), lr=LEARNING_RATE)
 
-# lists to store losses for epoch-level for later graph generation
 all_batch_losses = []
 all_epoch_train_losses = []
 all_epoch_val_losses = []
@@ -155,7 +149,7 @@ for epoch in range(NUM_EPOCHS):
     lora_model.train()
     running_loss_30_batch = 0.0
     start_time_30_batch = time.time()
-    epoch_train_loss = 0.0
+    train_loss = 0.0
 
     for i, (images, labels) in enumerate(tqdm(train_loader, desc="Training")):
         images = images.to(device)
@@ -168,25 +162,25 @@ for epoch in range(NUM_EPOCHS):
         loss.backward()
         optimizer.step()
         
-        current_loss = loss.item()
-        epoch_train_loss += current_loss
+        curr_loss = loss.item()
+        train_loss += curr_loss
         
-        running_loss_30_batch += current_loss
-        all_batch_losses.append(current_loss)
+        running_loss_30_batch += curr_loss
+        all_batch_losses.append(curr_loss)
 
         if (i + 1) % 30 == 0:
             end_time_30_batch = time.time()
             duration = end_time_30_batch - start_time_30_batch
             avg_loss_30_batch = running_loss_30_batch / 30
             
-            print(f"  [Epoch {epoch + 1}, Batch {i + 1}]")
-            print(f"    - Avg Loss (last 30 batches): {avg_loss_30_batch:.4f}")
-            print(f"    - Time (last 30 batches): {duration:.2f} seconds")
+            print(f"[Epoch {epoch + 1}, Batch {i + 1}]")
+            print(f"Avg Loss (last 30 batches): {avg_loss_30_batch:.4f}")
+            print(f"Time (last 30 batches): {duration:.2f} seconds")
             
             running_loss_30_batch = 0.0
             start_time_30_batch = time.time()
 
-    avg_epoch_train_loss = epoch_train_loss / len(train_loader)
+    avg_epoch_train_loss = train_loss / len(train_loader)
     all_epoch_train_losses.append(avg_epoch_train_loss)
     print(f"Epoch {epoch+1} Average Training Loss: {avg_epoch_train_loss:.4f}")
 
@@ -211,8 +205,7 @@ for epoch in range(NUM_EPOCHS):
     
     # stop if the validation loss did not improve
     if avg_epoch_val_loss < best_val_loss:
-        print(f"  Validation loss improved ({best_val_loss:.4f} --> {avg_epoch_val_loss:.4f})")
-        print(f"  Saving best model to {adapter_save_dir}...")
+        print(f"Validation loss improved ({best_val_loss:.4f} --> {avg_epoch_val_loss:.4f})")
         
         lora_model.save_pretrained(adapter_save_dir)
         best_val_loss = avg_epoch_val_loss
@@ -223,28 +216,27 @@ for epoch in range(NUM_EPOCHS):
         print(f"  Patience: {epochs_without_improvement}/{early_stopping_patience}")
 
     if epochs_without_improvement >= early_stopping_patience:
-        print(f"\n--- Early stopping triggered after {epoch + 1} epochs ---")
+        print(f"\nEarly stopping triggered after {epoch + 1} epochs")
         break # stop the training loop
 
 print(f"\nTraining complete. Best model saved in {adapter_save_dir}")
 
-# generate a batch-by-batch training loss graph
-print("\nGenerating batch-level training loss curve...")
+print("\nGenerating training loss curve...")
 try:
-    loss_df = pd.DataFrame({'batch_loss': all_batch_losses})
-    rolling_avg_loss = loss_df['batch_loss'].rolling(window=50).mean()
+    loss_df = panda.DataFrame({'batch_loss': all_batch_losses})
+    rolling_avg_loss = panda.DataFrame({'batch_loss': all_batch_losses})['batch_loss'].rolling(window=50).mean()
 
-    plt.figure(figsize=(12, 6))
-    plt.plot(loss_df['batch_loss'], label='Loss per Batch', alpha=0.3)
-    plt.plot(rolling_avg_loss, label='Smoothed Loss (50-batch avg)', color='red', linewidth=2)
-    plt.xlabel('Batch Number')
-    plt.ylabel('Loss (BCEWithLogitsLoss)')
-    plt.title('Training Loss Curve (Batch-by-Batch)')
-    plt.legend()
-    plt.grid(True)
+    plot.figure(figsize=(12, 6))
+    plot.plot(panda.DataFrame({'batch_loss': all_batch_losses})['batch_loss'], label='Loss per Batch', alpha=0.3)
+    plot.plot(rolling_avg_loss, label='Smoothed Loss (50-batch avg)', color='red', linewidth=2)
+    plot.xlabel('Batch Number')
+    plot.ylabel('Loss (BCEWithLogitsLoss)')
+    plot.title('Training Loss Curve (Batch-by-Batch)')
+    plot.legend()
+    plot.grid(True)
     
     plot_file_name = "training_loss_curve.png"
-    plt.savefig(plot_file_name)
+    plot.savefig(plot_file_name)
     print(f"Batch loss curve saved to {plot_file_name}")
 
 except Exception as e:
@@ -252,23 +244,20 @@ except Exception as e:
 
 # generating epoch-level training vs. validation Loss graph
 print("\ngenerating epoch-level loss comparison graph")
-try:
-    epoch_count = len(all_epoch_train_losses)
-    epoch_numbers = range(1, epoch_count + 1)
+try:    
+    plot.figure(figsize=(10, 6))
+    plot.plot(range(1, len(all_epoch_train_losses) + 1), all_epoch_train_losses, 'o-', label='Training Loss')
+    plot.plot(range(1, len(all_epoch_train_losses) + 1), all_epoch_val_losses, 'o-', label='Validation Loss')
     
-    plt.figure(figsize=(10, 6))
-    plt.plot(epoch_numbers, all_epoch_train_losses, 'o-', label='Training Loss')
-    plt.plot(epoch_numbers, all_epoch_val_losses, 'o-', label='Validation Loss')
-    
-    plt.xlabel('Epoch')
-    plt.ylabel('Average Loss')
-    plt.title('Training vs. Validation Loss')
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(epoch_numbers) 
+    plot.xlabel('Epoch')
+    plot.ylabel('Average Loss')
+    plot.title('Training vs. Validation Loss')
+    plot.legend()
+    plot.grid(True)
+    plot.xticks(range(1, len(all_epoch_train_losses) + 1)) 
     
     epoch_plot_file = "epoch_loss_comparison.png"
-    plt.savefig(epoch_plot_file)
+    plot.savefig(epoch_plot_file)
     print(f"Epoch loss comparison curve saved to {epoch_plot_file}")
 
 except Exception as e:

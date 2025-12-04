@@ -11,9 +11,9 @@ from peft import PeftModel
 
 # import from the dataloader
 try:
-    from chexpert_loader import val_loader, NUM_CLASSES, CLASS_NAMES
+    from chexpert_loader import val_loader, NUM_CLASSES, CLASSIFICATIONS
     print("Successfully imported 'val_loader' and 'NUM_CLASSES' from chexpert_loader.py")
-    print(f"found {NUM_CLASSES} classes: {CLASS_NAMES}")
+    print(f"found {NUM_CLASSES} classes: {CLASSIFICATIONS}")
 except ImportError:
     print("\n--- ERROR ---")
     print("Could not import from 'chexpert_loader.py'.")
@@ -75,7 +75,7 @@ print(f"Overall (Macro) AUROC: {macro_avg_auroc:.4f}")
 print("Individual Scores by Pathology:")
 
 results_df = pd.DataFrame({
-    'Pathology': CLASS_NAMES,
+    'Pathology': CLASSIFICATIONS,
     'AUROC': scores_np
 })
 results_df = results_df.sort_values(by='AUROC', ascending=False)
